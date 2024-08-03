@@ -1,0 +1,289 @@
+schema: '2.0'
+stages:
+  featurize:
+    cmd: python src/stages/featurize.py --config=params.yaml --train
+    deps:
+    - path: data/raw/stg3_current_diabetic_data.csv
+      hash: md5
+      md5: 5f7fed437074f90b8a4ed711f7e12150
+      size: 1549686
+    - path: src/stages/featurize.py
+      hash: md5
+      md5: 66e14aa4057b2fb73528743687f3eda8
+      size: 5084
+    params:
+      params.yaml:
+        base:
+          random_state: 42
+          log_level: INFO
+          continuous_learning: on
+        data_load:
+          source: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+          source_new: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+          local_folder: data/raw
+          local_name: stg1_diabetic_data.csv
+          dataset_csv: data/raw/stg2_current_diabetic_data.csv
+          future_csv: data/raw/stg2_future_diabetic_data.csv
+          inference_dataset_csv: data/raw/inference_diabetic_data.csv
+          new_data: data/raw/new_diabetic_data.csv
+          appended_dataset_csv: data/raw/stg3_current_diabetic_data.csv
+        featurize:
+          folder_processed: data/processed
+          features_path: data/processed/stg4_featured.csv
+          target_column: OUTPUT_LABEL
+          encoder_path: data/processed/one_hot_encoder.pkl
+    outs:
+    - path: data/processed/stg4_featured.csv
+      hash: md5
+      md5: 068b8afec012589207ff43fef6349a25
+      size: 1530923
+  data_split:
+    cmd: python src/stages/data_split.py --config=params.yaml
+    deps:
+    - path: data/processed/stg4_featured.csv
+      hash: md5
+      md5: 068b8afec012589207ff43fef6349a25
+      size: 1530923
+    - path: src/stages/data_split.py
+      hash: md5
+      md5: b2dde9f6f00e17a5a71295fad7278285
+      size: 3134
+    params:
+      params.yaml:
+        base:
+          random_state: 42
+          log_level: INFO
+          continuous_learning: on
+        data_split:
+          test_size: 0.2
+          trainset_path: data/processed/df_train.csv
+          validset_path: data/processed/df_valid.csv
+          testset_path: data/processed/df_test.csv
+          train_unbalanced_path: data/processed/df_train_all.csv
+          scaler_path: data/processed/scaler.sav
+        featurize:
+          folder_processed: data/processed
+          features_path: data/processed/stg4_featured.csv
+          target_column: OUTPUT_LABEL
+          encoder_path: data/processed/one_hot_encoder.pkl
+    outs:
+    - path: data/processed/df_test.csv
+      hash: md5
+      md5: cf86e0b0c92722f0cc9d9f67578e4682
+      size: 231435
+    - path: data/processed/df_train.csv
+      hash: md5
+      md5: bb31a4f3fa77c378920d9d22325ac64a
+      size: 236260
+    - path: data/processed/df_train_all.csv
+      hash: md5
+      md5: e4cf84eb67b0d84381cf0b5da84c686c
+      size: 1072294
+    - path: data/processed/df_valid.csv
+      hash: md5
+      md5: f873fd4cc4f32bca75e1af6d168acb9b
+      size: 231442
+    - path: data/processed/scaler.sav
+      hash: md5
+      md5: 656276b5eae6ada2df74a713a3775412
+      size: 3171
+  train:
+    cmd: python src/stages/train.py --config=params.yaml
+    deps:
+    - path: data/processed/df_train.csv
+      hash: md5
+      md5: bb31a4f3fa77c378920d9d22325ac64a
+      size: 236260
+    - path: src/stages/train.py
+      hash: md5
+      md5: 2001cb606c83298f6233f41d22bc8abb
+      size: 1307
+    params:
+      params.yaml:
+        base:
+          random_state: 42
+          log_level: INFO
+          continuous_learning: on
+        data_split.trainset_path: data/processed/df_train.csv
+        featurize.target_column: OUTPUT_LABEL
+        train:
+          cv: 3
+          estimator_name: logreg
+          estimators:
+            logreg:
+              param_grid:
+                C:
+                - 0.001
+                max_iter:
+                - 100
+                solver:
+                - lbfgs
+                multi_class:
+                - multinomial
+            svm:
+              param_grid:
+                C:
+                - 0.1
+                - 1.0
+                kernel:
+                - rbf
+                - linear
+                gamma:
+                - scale
+                degree:
+                - 3
+                - 5
+          model_path: models/model.joblib
+    outs:
+    - path: models/model.joblib
+      hash: md5
+      md5: 15387fcf765a0c40cd768269bf745bd7
+      size: 3667
+  evaluate:
+    cmd: python src/stages/evaluate.py --config=params.yaml
+    deps:
+    - path: data/processed/df_test.csv
+      hash: md5
+      md5: cf86e0b0c92722f0cc9d9f67578e4682
+      size: 231435
+    - path: models/model.joblib
+      hash: md5
+      md5: 15387fcf765a0c40cd768269bf745bd7
+      size: 3667
+    - path: src/stages/evaluate.py
+      hash: md5
+      md5: db60cf334309f602c041d7cc4db0b67e
+      size: 3193
+    params:
+      params.yaml:
+        base:
+          random_state: 42
+          log_level: INFO
+          continuous_learning: on
+        data_split.testset_path: data/processed/df_test.csv
+        evaluate:
+          reports_dir: reports
+          metrics_file: metrics.json
+          confusion_matrix_image: confusion_matrix.png
+          confusion_matrix_data: confusion_matrix_data.csv
+        featurize.target_column: OUTPUT_LABEL
+    outs:
+    - path: reports/confusion_matrix.png
+      hash: md5
+      md5: 46195ee0ad4ed1351c0d4a50d3aece15
+      size: 19954
+    - path: reports/metrics.json
+      hash: md5
+      md5: 3174e88daeffa830d3d3f4dc5544a474
+      size: 33
+  download_data:
+    cmd: python src/stages/download_data.py --config=params.yaml
+    deps:
+    - path: src/stages/download_data.py
+      hash: md5
+      md5: deb50025e35226e2964772cc38da78af
+      size: 962
+    params:
+      params.yaml:
+        base:
+          random_state: 42
+          log_level: INFO
+          continuous_learning: on
+        data_load:
+          source: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+          source_new: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+          local_folder: data/raw
+          local_name: stg1_diabetic_data.csv
+          dataset_csv: data/raw/stg2_current_diabetic_data.csv
+          future_csv: data/raw/stg2_future_diabetic_data.csv
+          inference_dataset_csv: data/raw/inference_diabetic_data.csv
+          new_data: data/raw/new_diabetic_data.csv
+          appended_dataset_csv: data/raw/stg3_current_diabetic_data.csv
+        featurize:
+          folder_processed: data/processed
+          features_path: data/processed/stg4_featured.csv
+          target_column: OUTPUT_LABEL
+          encoder_path: data/processed/one_hot_encoder.pkl
+    outs:
+    - path: data/raw/stg1_diabetic_data.csv
+      hash: md5
+      md5: 1424ff666584ef565cca7748b477ebef
+      size: 916834
+  load_data:
+    cmd: python src/stages/load_data.py --config=params.yaml
+    deps:
+    - path: data/raw/stg1_diabetic_data.csv
+      hash: md5
+      md5: 1424ff666584ef565cca7748b477ebef
+      size: 916834
+    - path: src/stages/load_data.py
+      hash: md5
+      md5: b3812e92611092e36fbd82fe5d4d4984
+      size: 1752
+    params:
+      params.yaml:
+        base:
+          random_state: 42
+          log_level: INFO
+          continuous_learning: on
+        data_load:
+          source: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+          source_new: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+          local_folder: data/raw
+          local_name: stg1_diabetic_data.csv
+          dataset_csv: data/raw/stg2_current_diabetic_data.csv
+          future_csv: data/raw/stg2_future_diabetic_data.csv
+          inference_dataset_csv: data/raw/inference_diabetic_data.csv
+          new_data: data/raw/new_diabetic_data.csv
+          appended_dataset_csv: data/raw/stg3_current_diabetic_data.csv
+        featurize:
+          folder_processed: data/processed
+          features_path: data/processed/stg4_featured.csv
+          target_column: OUTPUT_LABEL
+          encoder_path: data/processed/one_hot_encoder.pkl
+    outs:
+    - path: data/raw/stg2_current_diabetic_data.csv
+      hash: md5
+      md5: 4ae98fa8197ed1b8b90ac19aec38c162
+      size: 638533
+    - path: data/raw/stg2_future_diabetic_data.csv
+      hash: md5
+      md5: 82f2e7e2ed4d4f3cdd4960d3dcee3350
+      size: 273980
+  append_new_data:
+    cmd: python src/stages/append_new_data.py --config=params.yaml
+    deps:
+    - path: data/raw/stg2_current_diabetic_data.csv
+      hash: md5
+      md5: 4ae98fa8197ed1b8b90ac19aec38c162
+      size: 638533
+    - path: src/stages/append_new_data.py
+      hash: md5
+      md5: 26361bacbccde49ba4bc73c44f2aa975
+      size: 1756
+    params:
+      params.yaml:
+        base:
+          random_state: 42
+          log_level: INFO
+          continuous_learning: on
+        data_load:
+          source: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+          source_new: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+          local_folder: data/raw
+          local_name: stg1_diabetic_data.csv
+          dataset_csv: data/raw/stg2_current_diabetic_data.csv
+          future_csv: data/raw/stg2_future_diabetic_data.csv
+          inference_dataset_csv: data/raw/inference_diabetic_data.csv
+          new_data: data/raw/new_diabetic_data.csv
+          appended_dataset_csv: data/raw/stg3_current_diabetic_data.csv
+        featurize:
+          folder_processed: data/processed
+          features_path: data/processed/stg4_featured.csv
+          target_column: OUTPUT_LABEL
+          encoder_path: data/processed/one_hot_encoder.pkl
+    outs:
+    - path: data/raw/stg3_current_diabetic_data.csv
+      hash: md5
+      md5: 5f7fed437074f90b8a4ed711f7e12150
+      size: 1549686

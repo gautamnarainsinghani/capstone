@@ -1,0 +1,15 @@
+artifact_uri: file:///home/ubuntu/ik_capstone_v2-main/mlruns/180884637221425097/fa27e9ec80b543e3a7111a44239a305d/artifacts
+end_time: 1722685621395
+entry_point_name: ''
+experiment_id: '180884637221425097'
+lifecycle_stage: active
+run_id: fa27e9ec80b543e3a7111a44239a305d
+run_name: redolent-horse-568
+run_uuid: fa27e9ec80b543e3a7111a44239a305d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1722685618013
+status: 3
+tags: []
+user_id: ubuntu

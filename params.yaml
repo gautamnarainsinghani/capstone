@@ -1,0 +1,61 @@
+
+base:
+  random_state: 42
+  log_level: INFO
+  continuous_learning: on
+
+data_load:
+  source: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+  #source: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/diabetic_data.csv
+  source_new: https://mediwatch777.s3.us-west-2.amazonaws.com/raw_data/new_diabetic_data.csv
+  
+  local_folder: data/raw
+  local_name: stg1_diabetic_data.csv
+  
+  
+  dataset_csv: 'data/raw/stg2_current_diabetic_data.csv'
+  future_csv: 'data/raw/stg2_future_diabetic_data.csv'
+  inference_dataset_csv: 'data/raw/inference_diabetic_data.csv'
+  new_data: 'data/raw/new_diabetic_data.csv'
+  appended_dataset_csv: 'data/raw/stg3_current_diabetic_data.csv'
+
+featurize:
+  folder_processed: 'data/processed'
+  features_path: 'data/processed/stg4_featured.csv'
+  target_column: OUTPUT_LABEL
+  encoder_path: 'data/processed/one_hot_encoder.pkl'
+
+data_split:
+  test_size: 0.2
+  trainset_path: 'data/processed/df_train.csv'
+  validset_path: 'data/processed/df_valid.csv' 
+  testset_path: 'data/processed/df_test.csv'
+  train_unbalanced_path: 'data/processed/df_train_all.csv'
+  scaler_path: 'data/processed/scaler.sav'
+
+
+train:
+
+  cv: 3
+  estimator_name: logreg
+  estimators:
+    logreg: # sklearn.linear_model.LogisticRegression
+      param_grid: # params of GridSearchCV constructor
+        C: [0.001]
+        max_iter: [100]
+        solver: ['lbfgs']
+        multi_class: ['multinomial']
+    svm: # sklearn.svm.SVC
+      param_grid:
+        C: [0.1, 1.0]
+        kernel: ['rbf', 'linear']
+        gamma: ['scale']
+        degree: [3, 5]
+  model_path: models/model.joblib
+
+
+evaluate:
+  reports_dir: reports
+  metrics_file: 'metrics.json'
+  confusion_matrix_image: 'confusion_matrix.png'
+  confusion_matrix_data: 'confusion_matrix_data.csv'

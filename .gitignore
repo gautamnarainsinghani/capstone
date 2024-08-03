@@ -1,0 +1,11 @@
+medi-venv/
+data/
+reports/
+models/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/

@@ -1,0 +1,97 @@
+stages:
+
+  download_data:
+    cmd: python src/stages/download_data.py --config=params.yaml
+    deps:
+    - src/stages/download_data.py
+    params:
+    - base
+    - data_load
+    - featurize
+    outs:
+    - data/raw/stg1_diabetic_data.csv
+
+
+  load_data:
+    cmd: python src/stages/load_data.py --config=params.yaml
+    deps:
+    - data/raw/stg1_diabetic_data.csv
+    - src/stages/load_data.py
+    params:
+    - base
+    - data_load
+    - featurize
+    outs:
+    - data/raw/stg2_current_diabetic_data.csv
+    - data/raw/stg2_future_diabetic_data.csv 
+
+  append_new_data:
+    cmd: python src/stages/append_new_data.py --config=params.yaml
+    deps:
+    - data/raw/stg2_current_diabetic_data.csv
+    - src/stages/append_new_data.py
+    params:
+    - base
+    - data_load
+    - featurize
+    outs:
+    - data/raw/stg3_current_diabetic_data.csv
+
+
+  featurize:
+    cmd: python src/stages/featurize.py --config=params.yaml --train
+    deps:
+    - data/raw/stg3_current_diabetic_data.csv
+    - src/stages/featurize.py
+    params:
+    - base
+    - data_load
+    - featurize
+    outs:
+    - data/processed/stg4_featured.csv
+
+  data_split:
+    cmd: python src/stages/data_split.py --config=params.yaml
+    deps:
+    - data/processed/stg4_featured.csv
+    - src/stages/data_split.py
+    params:
+    - base
+    - data_split
+    - featurize
+    outs:
+    - data/processed/df_train.csv
+    - data/processed/df_valid.csv
+    - data/processed/df_test.csv
+    - data/processed/scaler.sav
+    - data/processed/df_train_all.csv
+
+  train:
+    cmd: python src/stages/train.py --config=params.yaml
+    deps:
+    - data/processed/df_train.csv
+    - src/stages/train.py
+    params:
+    - base
+    - data_split.trainset_path
+    - featurize.target_column
+    - train
+    outs:
+    - models/model.joblib
+
+  evaluate:
+    cmd: python src/stages/evaluate.py --config=params.yaml
+    deps:
+    - data/processed/df_test.csv
+    - models/model.joblib
+    - src/stages/evaluate.py
+    params:
+    - base
+    - data_split.testset_path
+    - evaluate
+    - featurize.target_column
+    outs:
+    - reports/confusion_matrix.png
+    metrics:
+    - reports/metrics.json:
+        cache: false

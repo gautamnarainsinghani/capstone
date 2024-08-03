@@ -1,0 +1,10 @@
+pandas
+jupyter
+ipykernel
+scikit-learn
+pyyaml
+joblib
+matplotlib
+dvc
+wget
+

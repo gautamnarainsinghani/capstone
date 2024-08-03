@@ -1,0 +1,6 @@
+artifact_location: s3://evidently1/0
+creation_time: 1722685036753
+experiment_id: '0'
+last_update_time: 1722685036753
+lifecycle_stage: active
+name: Default
